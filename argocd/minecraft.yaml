@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minecraft
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/antonypolitakis/k8s-homelab.git
+    targetRevision: main
+    path: apps/minecraft
+  destination:
+    server: https://kubernetes.default.svc   # "this cluster"
+    namespace: minecraft
+  syncPolicy:
+    automated:
+      prune: true      # delete things from the cluster when they're removed from Git
+      selfHeal: true   # undo changes made by hand that don't match Git
