@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minecraft
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate          # stop the old pod before starting a new one (only one can use the disk)
+  selector:
+    matchLabels:
+      app: minecraft
+  template:
+    metadata:
+      labels:
+        app: minecraft
+    spec:
+      containers:
+        - name: minecraft
+          image: itzg/minecraft-server:stable
+          env:
+            - name: EULA
+              value: "TRUE"   # you accept Minecraft's EULA by setting this
+            - name: MEMORY
+              value: "2G"     # Java heap size
+          ports:
+            - containerPort: 25565
+          resources:
+            requests:
+              cpu: 500m
+              memory: 2560Mi
+            limits:
+              memory: 3Gi
+          readinessProbe:
+            exec:
+              command: ["mc-health"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: minecraft-data
