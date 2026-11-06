@@ -22,6 +22,8 @@ spec:
               value: "TRUE"   # you accept Minecraft's EULA by setting this
             - name: MEMORY
               value: "2G"     # Java heap size
+            - name: MOTD
+              value: "Deployed by Argo CD"
           ports:
             - containerPort: 25565
           resources:
