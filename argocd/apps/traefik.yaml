@@ -22,6 +22,12 @@ spec:
         ingressClass:
           enabled: true
           isDefaultClass: true
+        providers:
+          kubernetesIngress:
+            publishedService:
+              enabled: false      # don't copy from the Service (NodePort has no address)
+            ingressEndpoint:
+              ip: 127.0.0.1       # publish this instead, so Argo CD sees Ingresses as Healthy
   destination:
     server: https://kubernetes.default.svc
     namespace: traefik
