@@ -4,7 +4,13 @@ name: homelab
 nodes:
   - role: control-plane
     extraPortMappings:
-      - containerPort: 30565
+      - containerPort: 30080   # Traefik HTTP
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 30443   # Traefik HTTPS
+        hostPort: 443
+        protocol: TCP
+      - containerPort: 30565   # Minecraft (not HTTP, so it skips the ingress)
         hostPort: 25565
         protocol: TCP
   - role: worker
