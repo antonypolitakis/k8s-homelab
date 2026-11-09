@@ -120,3 +120,9 @@ Traefik via Argo CD; `argocd.localhost` and `podinfo.localhost` with no port-for
 Added `argocd/apps/argocd.yaml` (Argo CD's own chart + `argocd/values.yaml` from this repo), first with manual sync.
 **Result:** OutOfSync for 54 resources — only the missing tracking annotation; `kubectl diff` of the rendered chart showed no real changes. Synced with **no pod restarts**. Then enabled auto-sync and pushed `server.replicas: 2`: Argo CD scaled its own server to two pods.
 **Lesson:** "OutOfSync" doesn't always mean "different" — check the diff before you sync, especially on something you can't afford to break. See [GitOps](gitops.md#argo-cd-manages-itself).
+
+## Project 3 — HTTPS with cert-manager
+
+Made a name-constrained CA on the Mac with `openssl`, trusted it in the System keychain, loaded it as a Secret, and added cert-manager + a `ClusterIssuer` through Argo CD. Annotated the two Ingresses.
+**Result:** both certificates issued within seconds of the sync; `https://argocd.localhost` shows a padlock. Argo CD's TLS was switched on by committing to its own `values.yaml` — self-management in action.
+**Lesson:** the private key is the one thing that can't go in Git; everything else (issuer, which hosts get certs) can. See [HTTPS](https.md).

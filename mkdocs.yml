@@ -45,6 +45,7 @@ nav:
   - How it works:
       - GitOps with Argo CD: gitops.md
       - Ingress (Traefik): ingress.md
+      - HTTPS (cert-manager): https.md
       - Storage: storage.md
       - Health probes: probes.md
       - Autoscaling: autoscaling.md

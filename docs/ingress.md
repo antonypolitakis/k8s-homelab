@@ -98,4 +98,6 @@ The hostname alternates between replicas — something a port-forward never does
 
 ## HTTPS
 
-Port 443 is mapped and Traefik listens on it, but only with its self-signed default certificate. Use `http://` for now. Proper certificates from a local CA via **cert-manager** are on the [Roadmap](roadmap.md).
+Traefik terminates TLS on port 443 using certificates issued by cert-manager from a local CA. Adding two things to an Ingress — an annotation and a `tls:` block — is all an app needs. See [HTTPS](https.md).
+
+Plain `http://` still works too (there's no redirect yet).

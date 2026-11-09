@@ -5,15 +5,15 @@ A local Kubernetes learning lab on an Apple Silicon Mac, run the **GitOps** way:
 ```
  git push ──► GitHub (this repo) ◄── polls ── Argo CD ──► kind cluster "homelab"
 
- browser ──► http://<app>.localhost ──► Traefik (ingress) ──► app Service ──► pods
+ browser ──► https://<app>.localhost ──► Traefik (ingress) ──► app Service ──► pods
 ```
 
 ## What's running
 
 | URL | What |
 |---|---|
-| <http://argocd.localhost> | Argo CD UI (user `admin`) |
-| <http://podinfo.localhost> | podinfo — a small demo web app, autoscaled |
+| <https://argocd.localhost> | Argo CD UI (user `admin`) |
+| <https://podinfo.localhost> | podinfo — a small demo web app, autoscaled |
 | `localhost:25565` | Minecraft server (Java Edition) |
 
 ## The big ideas
@@ -27,5 +27,5 @@ A local Kubernetes learning lab on an Apple Silicon Mac, run the **GitOps** way:
 ## Where to go next
 
 - New here? Start with [Setup & bootstrap](setup.md), then [The cluster](cluster.md).
-- Want to understand the plumbing? Read [GitOps with Argo CD](gitops.md), [Ingress](ingress.md) and [Storage](storage.md).
+- Want to understand the plumbing? Read [GitOps with Argo CD](gitops.md), [Ingress](ingress.md), [HTTPS](https.md) and [Storage](storage.md).
 - Want to see what's been tried and what it taught? See the [Experiments](experiments.md) log.

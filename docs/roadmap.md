@@ -4,9 +4,9 @@
 
 - [x] **1. Minecraft server** — Deployments, Services, PersistentVolumes
 - [x] **2. Break things on purpose** — pod kills, node drain, memory starvation, probes, HPA + load test
-- [ ] **3. Hostnames and HTTPS**
+- [x] **3. Hostnames and HTTPS**
     - [x] Traefik ingress with `*.localhost`
-    - [ ] cert-manager with a local certificate authority, trusted by the Mac
+    - [x] cert-manager with a local certificate authority, trusted by the Mac
 - [ ] **4. Monitoring** — `kube-prometheus-stack` (Prometheus + Grafana), app metrics, a custom dashboard; watch the HPA from project 2
 - [x] **5. GitOps with Argo CD** — app of apps, auto-sync, prune, self-heal, Argo CD manages itself
 - [ ] **6. Write a Kubernetes extension** — a custom resource and controller with kubebuilder
@@ -14,10 +14,10 @@
 
 ## Next up
 
-1. **cert-manager** — finish project 3: `https://argocd.localhost` with a padlock.
+1. **Local LLMs** — see below.
 2. **Monitoring** — project 4.
 
-Done: ~~Argo CD manages itself~~ — upgrades are now a Git change. See [GitOps](gitops.md#argo-cd-manages-itself).
+Done: ~~Argo CD manages itself~~ ([GitOps](gitops.md#argo-cd-manages-itself)) · ~~cert-manager~~ ([HTTPS](https.md)).
 
 ## Later
 
@@ -31,3 +31,5 @@ Done: ~~Argo CD manages itself~~ — upgrades are now a Git change. See [GitOps]
 - Argo CD `resources-finalizer` so removing an app also removes its resources.
 - Gateway API instead of the Ingress API.
 - Delete the `argocd-initial-admin-secret` after first login, as Argo CD recommends.
+- Redirect HTTP → HTTPS in Traefik (`ports.web.redirections`).
+- Secrets in Git, safely: SOPS or Sealed Secrets (would replace the hand-loaded CA Secret).

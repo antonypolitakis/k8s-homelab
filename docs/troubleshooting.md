@@ -51,8 +51,22 @@
 **`localhost:9898` refuses to connect**
 : No port-forward is running (or it died with its pod). Use <http://podinfo.localhost> instead.
 
-**`https://argocd.localhost` shows a certificate warning**
-: Traefik's default self-signed certificate. Use `http://` until cert-manager is set up.
+## HTTPS
+
+**Browser shows a certificate warning, and the certificate is "TRAEFIK DEFAULT CERT"**
+: cert-manager hasn't issued the certificate (yet). Check `kubectl get certificate -A` — `READY False` → `kubectl describe certificate -n <ns> <name>`. Right after a rebuild, give it a minute.
+
+**`kubectl get clusterissuer` shows `READY False`**
+: The `homelab-ca` Secret is missing from the `cert-manager` namespace — usually a rebuild without `~/.homelab-ca/`. Load it with the two `kubectl create` lines in `bootstrap.sh`.
+
+**Certificate is from `k8s-homelab local CA` but the browser still doesn't trust it**
+: The CA isn't in the System keychain (`security find-certificate -c "k8s-homelab local CA" /Library/Keychains/System.keychain`). Re-run the `security add-trusted-cert` step. Firefox may need a restart.
+
+**`curl: (60) SSL certificate problem`**
+: Your `curl` doesn't read the macOS keychain. Use `curl --cacert ~/.homelab-ca/ca.crt https://…`.
+
+**`cluster-issuers` app failed its first sync**
+: Expected on a fresh cluster: the `ClusterIssuer` kind doesn't exist until cert-manager installs its CRDs. The app's `retry` policy fixes it on its own.
 
 ## Pods
 

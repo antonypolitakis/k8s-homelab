@@ -7,13 +7,13 @@ Nothing is deployed with `kubectl apply` except the one-time bootstrap.
 ```
  git push ──► GitHub (this repo) ◄── polls ── Argo CD ──► kind cluster "homelab"
 
- browser ──► http://<app>.localhost ──► Traefik (ingress) ──► app Service ──► pods
+ browser ──► https://<app>.localhost ──► Traefik (ingress) ──► app Service ──► pods
 ```
 
 | URL | What |
 |---|---|
-| http://argocd.localhost | Argo CD UI (user `admin`) |
-| http://podinfo.localhost | podinfo demo app (autoscaled) |
+| https://argocd.localhost | Argo CD UI (user `admin`) |
+| https://podinfo.localhost | podinfo demo app (autoscaled) |
 | `localhost:25565` | Minecraft (Java Edition) |
 
 📖 **Full documentation lives in [`docs/`](docs/index.md)** and can be served with MkDocs — see [Docs](#docs) below.
@@ -22,15 +22,16 @@ Nothing is deployed with `kubectl apply` except the one-time bootstrap.
 
 ```bash
 brew install --cask orbstack && brew install kind kubectl helm k9s gh hey
+# once: create + trust the local CA (see docs/https.md)
 ./bootstrap.sh                                         # create from scratch (~2–3 min)
 kind delete cluster --name homelab && ./bootstrap.sh   # full teardown + rebuild
 ```
 
-`bootstrap.sh` creates the kind cluster, installs Argo CD with Helm (settings in `argocd/values.yaml`), applies `argocd/root.yaml`, waits for Traefik, then prints the admin password and URLs. Argo CD deploys everything else from Git — and takes over its own install.
+`bootstrap.sh` creates the kind cluster, loads the local CA from `~/.homelab-ca/` into a Secret, installs Argo CD with Helm (settings in `argocd/values.yaml`), applies `argocd/root.yaml`, waits for Traefik, then prints the admin password and URLs. Argo CD deploys everything else from Git — and takes over its own install.
 
 > Push before you rebuild — Argo CD reads from GitHub, not your local checkout.
 
-**Survives a rebuild:** everything in Git. **Doesn't:** data (the Minecraft world) and the Argo CD admin password.
+**Survives a rebuild:** everything in Git, and the local CA (it lives on the Mac). **Doesn't:** data (the Minecraft world) and the Argo CD admin password.
 
 ## What's installed
 
@@ -51,6 +52,7 @@ kind delete cluster --name homelab && ./bootstrap.sh   # full teardown + rebuild
 | local-path-provisioner | kind default | `local-path-storage` | kind |
 | Argo CD | v3.6.1 (chart `argo/argo-cd` 10.14.0) | `argocd` | Argo CD itself (Helm only at bootstrap) — [`argocd/values.yaml`](argocd/values.yaml) |
 | Traefik (ingress controller) | v3.7.17 (chart `traefik/traefik` 42.3.1) | `traefik` | Argo CD |
+| cert-manager | v1.21.3 (chart `cert-manager` v1.21.3) | `cert-manager` | Argo CD; CA key loaded by `bootstrap.sh` |
 | metrics-server | v0.9.0 (chart `metrics-server` 3.14.0) | `kube-system` | Argo CD |
 | podinfo | `ghcr.io/stefanprodan/podinfo:6.17.0` | `podinfo` | Argo CD |
 | Minecraft server | `itzg/minecraft-server:stable` | `minecraft` | Argo CD |
@@ -69,11 +71,14 @@ k8s-homelab/
 │   ├── root.yaml             # the "app of apps" — applied once by bootstrap.sh
 │   └── apps/                 # one Argo CD Application per app; root watches this folder
 │       ├── argocd.yaml           # Argo CD's own chart + values.yaml (self-managed)
+│       ├── cert-manager.yaml     # Helm chart, from the chart repo
+│       ├── cluster-issuers.yaml  # → apps/cluster-issuers/
 │       ├── metrics-server.yaml   # Helm chart, from the chart repo
 │       ├── minecraft.yaml
 │       ├── podinfo.yaml
 │       └── traefik.yaml          # Helm chart, from the chart repo
 └── apps/                     # plain Kubernetes manifests, one folder per app (kustomize)
+    ├── cluster-issuers/      # ClusterIssuer "homelab-ca" (signs with the local CA)
     ├── minecraft/            # Namespace, PVC, Deployment, Service
     └── podinfo/              # Deployment (probes), Service, Ingress, HPA
 ```
@@ -84,6 +89,8 @@ k8s-homelab/
 root (argocd/root.yaml)
   └─ watches argocd/apps/*.yaml
        ├─ argocd          ──► Helm chart argo-cd 10.14.0        ──► ns argocd (itself)
+       ├─ cert-manager    ──► Helm chart cert-manager v1.21.3   ──► ns cert-manager
+       ├─ cluster-issuers ──► apps/cluster-issuers/             ──► ClusterIssuer homelab-ca
        ├─ traefik         ──► Helm chart traefik 42.3.1         ──► ns traefik
        ├─ metrics-server  ──► Helm chart metrics-server 3.14.0  ──► ns kube-system
        ├─ podinfo         ──► apps/podinfo/                     ──► ns podinfo
@@ -94,9 +101,9 @@ Every Application syncs automatically with `prune: true` (removed from Git → d
 
 **Upgrading Argo CD:** bump the chart version in `argocd/apps/argocd.yaml` *and* `bootstrap.sh`, then push. Don't run `helm upgrade` by hand any more.
 
-**To add an app:** manifests in `apps/<name>/` + an Application in `argocd/apps/<name>.yaml` + an `ingress.yaml` with `host: <name>.localhost` if it's a web app → `git push`.
+**To add an app:** manifests in `apps/<name>/` + an Application in `argocd/apps/<name>.yaml` + an `ingress.yaml` with `host: <name>.localhost` (plus the cert-manager annotation and `tls:` block for HTTPS) if it's a web app → `git push`.
 
-Details: [GitOps](docs/gitops.md) · [Ingress](docs/ingress.md) · [Storage](docs/storage.md) · [Autoscaling](docs/autoscaling.md)
+Details: [GitOps](docs/gitops.md) · [Ingress](docs/ingress.md) · [HTTPS](docs/https.md) · [Storage](docs/storage.md) · [Autoscaling](docs/autoscaling.md)
 
 ## Accessing things
 
@@ -132,6 +139,7 @@ Fallback if the ingress is broken: `kubectl port-forward svc/argocd-server -n ar
 | Starve podinfo (8Mi) **without** probes | All pods replaced → 503s | No readiness probe = "started" counts as "ready" |
 | Starve podinfo **with** readiness probe | Rollout stuck; old pods kept serving | Probes make rolling updates safe |
 | HPA + `hey -c 50` | 2 → 4 → 8 in 30 s; back to 2 after 5 min | Fast up, slow down; closed-loop load never satisfies an HPA |
+| HTTPS via cert-manager + local CA | Certs issued in seconds; padlock | Only the CA key stays out of Git |
 | Argo CD adopts its own install | 54 OutOfSync (annotations only); synced with no restarts | Check the diff before you sync |
 
 The full write-up is in [docs/experiments.md](docs/experiments.md).
@@ -140,7 +148,7 @@ The full write-up is in [docs/experiments.md](docs/experiments.md).
 
 - [x] 1. Minecraft server — Deployments, Services, PersistentVolumes
 - [x] 2. Break things on purpose — pod kills, node drain, memory starvation, probes, HPA + load test
-- [ ] 3. Ingress (`*.localhost`) ✅ Traefik, + cert-manager with a local CA for HTTPS
+- [x] 3. Ingress (`*.localhost`, Traefik) + HTTPS (cert-manager, local CA)
 - [ ] 4. Monitoring with `kube-prometheus-stack`
 - [x] 5. GitOps with Argo CD (app of apps, self-managed)
 - [ ] 6. A custom controller with kubebuilder

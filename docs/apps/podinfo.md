@@ -2,7 +2,7 @@
 
 [podinfo](https://github.com/stefanprodan/podinfo) is a tiny Go web app built for demos: it shows which pod served each request, exposes health endpoints, and is very fast. Here it's the target for breaking things and autoscaling.
 
-- **URL:** <http://podinfo.localhost>
+- **URL:** <https://podinfo.localhost>
 - **Image:** `ghcr.io/stefanprodan/podinfo:6.17.0` (pinned — `latest` would hide which version is running)
 - **Namespace:** `podinfo` (created by Argo CD via `CreateNamespace=true`)
 

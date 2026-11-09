@@ -23,6 +23,10 @@ brew install kind kubectl helm k9s gh hey
 !!! note "GitHub CLI"
     `gh auth login` → GitHub.com → HTTPS → *Authenticate Git with your GitHub credentials: Yes* → web browser. After that, `git push` just works.
 
+## One-time: a local certificate authority
+
+HTTPS certificates are signed by a CA that lives on your Mac, outside Git. Create and trust it once — it survives rebuilds. Full steps and reasoning: [HTTPS](https.md#one-time-setup-on-the-mac).
+
 ## Bootstrap
 
 Everything is rebuilt by one script:
@@ -35,10 +39,11 @@ kind delete cluster --name homelab && ./bootstrap.sh   # full teardown + rebuild
 What `bootstrap.sh` does, in order:
 
 1. **`kind create cluster --config cluster/kind-config.yaml`** — 3 nodes, with Mac ports 80/443/25565 mapped in. See [The cluster](cluster.md).
-2. **`helm upgrade --install argocd argo/argo-cd --version 10.14.0 -f argocd/values.yaml`** — installs Argo CD with our settings (ingress at `argocd.localhost`, plain HTTP behind Traefik). Then waits for all its Deployments.
-3. **`kubectl apply -f argocd/root.yaml`** — the *only* hand-applied manifest. From here, Argo CD deploys everything in `argocd/apps/` from GitHub — including **Argo CD itself**, which adopts the Helm install. See [GitOps](gitops.md#argo-cd-manages-itself).
-4. **Waits for Traefik** to be Healthy, so the URLs work when it finishes.
-5. Prints the Argo CD admin password and the URLs.
+2. **Loads the local CA** from `~/.homelab-ca/` into a Secret in `cert-manager` (warns and carries on if it's missing).
+3. **`helm upgrade --install argocd argo/argo-cd --version 10.14.0 -f argocd/values.yaml`** — installs Argo CD with our settings (ingress at `argocd.localhost`, plain HTTP behind Traefik). Then waits for all its Deployments.
+4. **`kubectl apply -f argocd/root.yaml`** — the *only* hand-applied manifest. From here, Argo CD deploys everything in `argocd/apps/` from GitHub — including **Argo CD itself**, which adopts the Helm install. See [GitOps](gitops.md#argo-cd-manages-itself).
+5. **Waits for Traefik** to be Healthy, so the URLs work when it finishes.
+6. Prints the Argo CD admin password and the URLs.
 
 The script `cd`s to its own directory first, so it can be run from anywhere.
 
@@ -53,12 +58,13 @@ The script `cd`s to its own directory first, so it can be run from anywhere.
 | Survives | Lost |
 |---|---|
 | Everything defined in Git — apps, ingress, autoscaling, config | Data in PersistentVolumes (the Minecraft world) |
+| The local CA and the Mac's trust in it (`~/.homelab-ca/`) | Issued certificates (re-issued automatically in ~1 min) |
 | | The Argo CD admin password (a new one is generated) |
 | | Running port-forwards |
 
 ## Logging in to Argo CD
 
-Open <http://argocd.localhost>, user `admin`, password:
+Open <https://argocd.localhost>, user `admin`, password:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
