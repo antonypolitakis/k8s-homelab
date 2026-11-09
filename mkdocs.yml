@@ -1,0 +1,57 @@
+site_name: k8s-homelab
+site_description: A local Kubernetes learning lab on an Apple Silicon Mac, run the GitOps way.
+repo_url: https://github.com/antonypolitakis/k8s-homelab
+repo_name: antonypolitakis/k8s-homelab
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Setup & bootstrap: setup.md
+      - The cluster: cluster.md
+  - How it works:
+      - GitOps with Argo CD: gitops.md
+      - Ingress (Traefik): ingress.md
+      - Storage: storage.md
+      - Health probes: probes.md
+      - Autoscaling: autoscaling.md
+  - Apps:
+      - podinfo: apps/podinfo.md
+      - Minecraft: apps/minecraft.md
+  - Lab notebook:
+      - Experiments: experiments.md
+      - Troubleshooting & gotchas: troubleshooting.md
+      - Roadmap: roadmap.md
