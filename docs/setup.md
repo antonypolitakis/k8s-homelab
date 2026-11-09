@@ -7,7 +7,7 @@
 | [OrbStack](https://orbstack.dev) | Docker 29.8 | Runs a lightweight Linux VM with Docker in it. kind's "nodes" are containers inside it. Lighter and faster than Docker Desktop on Apple Silicon. |
 | [kind](https://kind.sigs.k8s.io) | v0.33.0 | **K**ubernetes **in** **D**ocker — builds a real, upstream Kubernetes cluster where each node is a Docker container. |
 | kubectl | current | The Kubernetes CLI. Must be within one minor version of the cluster. |
-| helm | current | Installs Argo CD (everything else is installed *by* Argo CD). |
+| helm | current | Installs Argo CD once, at bootstrap (after that, Argo CD manages itself). |
 | k9s | current | Terminal UI — press `0` for all namespaces, `:q` to quit. |
 | gh | current | GitHub CLI — create repos, manage auth. |
 | hey | 0.1.5 | HTTP load generator for testing autoscaling. |
@@ -36,11 +36,14 @@ What `bootstrap.sh` does, in order:
 
 1. **`kind create cluster --config cluster/kind-config.yaml`** — 3 nodes, with Mac ports 80/443/25565 mapped in. See [The cluster](cluster.md).
 2. **`helm upgrade --install argocd argo/argo-cd --version 10.14.0 -f argocd/values.yaml`** — installs Argo CD with our settings (ingress at `argocd.localhost`, plain HTTP behind Traefik). Then waits for all its Deployments.
-3. **`kubectl apply -f argocd/root.yaml`** — the *only* hand-applied manifest. From here, Argo CD deploys everything in `argocd/apps/` from GitHub. See [GitOps](gitops.md).
+3. **`kubectl apply -f argocd/root.yaml`** — the *only* hand-applied manifest. From here, Argo CD deploys everything in `argocd/apps/` from GitHub — including **Argo CD itself**, which adopts the Helm install. See [GitOps](gitops.md#argo-cd-manages-itself).
 4. **Waits for Traefik** to be Healthy, so the URLs work when it finishes.
 5. Prints the Argo CD admin password and the URLs.
 
-The script `cd`s to its own directory first, so it can be run from anywhere. `helm upgrade --install` means re-running the Helm step on an existing cluster applies changes to `argocd/values.yaml` in place.
+The script `cd`s to its own directory first, so it can be run from anywhere.
+
+!!! warning "Helm is for bootstrap only"
+    On a running cluster, change Argo CD by committing to `argocd/values.yaml` — not by re-running the Helm step. The chart version is in both `bootstrap.sh` and `argocd/apps/argocd.yaml`; keep them the same.
 
 !!! warning "Push before you rebuild"
     Argo CD reads the repo from **GitHub**, not from your laptop. Anything not pushed won't be deployed.

@@ -37,6 +37,12 @@
 **My change isn't showing up**
 : Did you push? Argo CD reads GitHub, not your laptop. Then press **Refresh** — otherwise it polls every ~3 minutes.
 
+**The `argocd` app shows OutOfSync for every resource right after it's created**
+: Expected on first adoption: the Helm-installed resources don't have Argo CD's `tracking-id` annotation yet. Compare first (`helm template … | kubectl diff -f -`); if the contents match, one sync adds the annotations without restarting anything.
+
+**Argo CD itself is broken after a commit to `argocd/values.yaml`**
+: Revert in Git, then re-run the Helm line from `bootstrap.sh` to get Argo CD back up; it will then sync from the fixed Git.
+
 **Manual `kubectl` changes keep getting undone**
 : That's `selfHeal`. Change Git instead.
 

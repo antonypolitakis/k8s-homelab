@@ -8,14 +8,16 @@
     - [x] Traefik ingress with `*.localhost`
     - [ ] cert-manager with a local certificate authority, trusted by the Mac
 - [ ] **4. Monitoring** — `kube-prometheus-stack` (Prometheus + Grafana), app metrics, a custom dashboard; watch the HPA from project 2
-- [x] **5. GitOps with Argo CD** — app of apps, auto-sync, prune, self-heal
+- [x] **5. GitOps with Argo CD** — app of apps, auto-sync, prune, self-heal, Argo CD manages itself
 - [ ] **6. Write a Kubernetes extension** — a custom resource and controller with kubebuilder
 - [ ] **7. Graduate to the cloud** — Terraform a small managed cluster (e.g. EKS), deploy the same manifests, destroy it afterwards
 
 ## Next up
 
-1. **Argo CD manages itself** — move the Argo CD Helm install into `argocd/apps/`, so upgrades are a Git change and `bootstrap.sh` shrinks.
-2. **cert-manager** — finish project 3: `https://argocd.localhost` with a padlock.
+1. **cert-manager** — finish project 3: `https://argocd.localhost` with a padlock.
+2. **Monitoring** — project 4.
+
+Done: ~~Argo CD manages itself~~ — upgrades are now a Git change. See [GitOps](gitops.md#argo-cd-manages-itself).
 
 ## Later
 

@@ -114,3 +114,9 @@ metrics-server + an HPA (2–8 pods at 50% CPU), then `hey -z 180s -c 50`.
 ## Project 3 — Ingress
 
 Traefik via Argo CD; `argocd.localhost` and `podinfo.localhost` with no port-forwards. Requests alternate between podinfo replicas. A Traefik setting change (`ingressEndpoint.ip`) was rolled out by Argo CD in place — no rebuild. See [Ingress](ingress.md).
+
+## Project 5 — Argo CD manages itself
+
+Added `argocd/apps/argocd.yaml` (Argo CD's own chart + `argocd/values.yaml` from this repo), first with manual sync.
+**Result:** OutOfSync for 54 resources — only the missing tracking annotation; `kubectl diff` of the rendered chart showed no real changes. Synced with **no pod restarts**. Then enabled auto-sync and pushed `server.replicas: 2`: Argo CD scaled its own server to two pods.
+**Lesson:** "OutOfSync" doesn't always mean "different" — check the diff before you sync, especially on something you can't afford to break. See [GitOps](gitops.md#argo-cd-manages-itself).

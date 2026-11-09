@@ -26,7 +26,7 @@ brew install --cask orbstack && brew install kind kubectl helm k9s gh hey
 kind delete cluster --name homelab && ./bootstrap.sh   # full teardown + rebuild
 ```
 
-`bootstrap.sh` creates the kind cluster, installs Argo CD with Helm (settings in `argocd/values.yaml`), applies `argocd/root.yaml`, waits for Traefik, then prints the admin password and URLs. Argo CD deploys everything else from Git.
+`bootstrap.sh` creates the kind cluster, installs Argo CD with Helm (settings in `argocd/values.yaml`), applies `argocd/root.yaml`, waits for Traefik, then prints the admin password and URLs. Argo CD deploys everything else from Git — and takes over its own install.
 
 > Push before you rebuild — Argo CD reads from GitHub, not your local checkout.
 
@@ -49,7 +49,7 @@ kind delete cluster --name homelab && ./bootstrap.sh   # full teardown + rebuild
 |---|---|---|---|
 | Kubernetes | v1.37.0 | — | kind ([`cluster/kind-config.yaml`](cluster/kind-config.yaml)) |
 | local-path-provisioner | kind default | `local-path-storage` | kind |
-| Argo CD | v3.6.1 (chart `argo/argo-cd` 10.14.0) | `argocd` | Helm, via [`bootstrap.sh`](bootstrap.sh) + [`argocd/values.yaml`](argocd/values.yaml) |
+| Argo CD | v3.6.1 (chart `argo/argo-cd` 10.14.0) | `argocd` | Argo CD itself (Helm only at bootstrap) — [`argocd/values.yaml`](argocd/values.yaml) |
 | Traefik (ingress controller) | v3.7.17 (chart `traefik/traefik` 42.3.1) | `traefik` | Argo CD |
 | metrics-server | v0.9.0 (chart `metrics-server` 3.14.0) | `kube-system` | Argo CD |
 | podinfo | `ghcr.io/stefanprodan/podinfo:6.17.0` | `podinfo` | Argo CD |
@@ -68,6 +68,7 @@ k8s-homelab/
 │   ├── values.yaml           # Helm values for Argo CD itself
 │   ├── root.yaml             # the "app of apps" — applied once by bootstrap.sh
 │   └── apps/                 # one Argo CD Application per app; root watches this folder
+│       ├── argocd.yaml           # Argo CD's own chart + values.yaml (self-managed)
 │       ├── metrics-server.yaml   # Helm chart, from the chart repo
 │       ├── minecraft.yaml
 │       ├── podinfo.yaml
@@ -82,13 +83,16 @@ k8s-homelab/
 ```
 root (argocd/root.yaml)
   └─ watches argocd/apps/*.yaml
+       ├─ argocd          ──► Helm chart argo-cd 10.14.0        ──► ns argocd (itself)
        ├─ traefik         ──► Helm chart traefik 42.3.1         ──► ns traefik
        ├─ metrics-server  ──► Helm chart metrics-server 3.14.0  ──► ns kube-system
        ├─ podinfo         ──► apps/podinfo/                     ──► ns podinfo
        └─ minecraft       ──► apps/minecraft/                   ──► ns minecraft
 ```
 
-Every Application syncs automatically with `prune: true` (removed from Git → deleted) and `selfHeal: true` (manual changes reverted).
+Every Application syncs automatically with `prune: true` (removed from Git → deleted) and `selfHeal: true` (manual changes reverted). The exception is `argocd`, which has `prune: false` so it can never delete parts of itself.
+
+**Upgrading Argo CD:** bump the chart version in `argocd/apps/argocd.yaml` *and* `bootstrap.sh`, then push. Don't run `helm upgrade` by hand any more.
 
 **To add an app:** manifests in `apps/<name>/` + an Application in `argocd/apps/<name>.yaml` + an `ingress.yaml` with `host: <name>.localhost` if it's a web app → `git push`.
 
@@ -128,6 +132,7 @@ Fallback if the ingress is broken: `kubectl port-forward svc/argocd-server -n ar
 | Starve podinfo (8Mi) **without** probes | All pods replaced → 503s | No readiness probe = "started" counts as "ready" |
 | Starve podinfo **with** readiness probe | Rollout stuck; old pods kept serving | Probes make rolling updates safe |
 | HPA + `hey -c 50` | 2 → 4 → 8 in 30 s; back to 2 after 5 min | Fast up, slow down; closed-loop load never satisfies an HPA |
+| Argo CD adopts its own install | 54 OutOfSync (annotations only); synced with no restarts | Check the diff before you sync |
 
 The full write-up is in [docs/experiments.md](docs/experiments.md).
 
@@ -137,10 +142,10 @@ The full write-up is in [docs/experiments.md](docs/experiments.md).
 - [x] 2. Break things on purpose — pod kills, node drain, memory starvation, probes, HPA + load test
 - [ ] 3. Ingress (`*.localhost`) ✅ Traefik, + cert-manager with a local CA for HTTPS
 - [ ] 4. Monitoring with `kube-prometheus-stack`
-- [x] 5. GitOps with Argo CD (app of apps)
+- [x] 5. GitOps with Argo CD (app of apps, self-managed)
 - [ ] 6. A custom controller with kubebuilder
 - [ ] 7. Managed cluster in the cloud with Terraform
-- [ ] Let Argo CD manage its own Helm install
+- [x] Let Argo CD manage its own Helm install
 - [ ] Test harness / scripts
 - [ ] Local LLMs (run natively on macOS for GPU access; call from the cluster)
 
