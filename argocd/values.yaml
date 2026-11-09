@@ -6,6 +6,7 @@ configs:
     server.insecure: true
 
 server:
+  replicas: 2
   ingress:
     enabled: true
     ingressClassName: traefik
