@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: docs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docs
+  template:
+    metadata:
+      labels:
+        app: docs
+    spec:
+      initContainers:
+        - name: git-sync            # a "native sidecar": starts first, runs forever
+          image: registry.k8s.io/git-sync/git-sync:v4.8.0
+          restartPolicy: Always
+          args:
+            - --repo=https://github.com/antonypolitakis/k8s-homelab.git
+            - --ref=main
+            - --root=/git
+            - --link=current
+            - --period=60s
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { memory: 128Mi }
+          volumeMounts:
+            - { name: git, mountPath: /git }
+      containers:
+        - name: mkdocs
+          image: squidfunk/mkdocs-material:9.8.1
+          command: ["/bin/sh", "/scripts/build-loop.sh"]
+          env:
+            - { name: NO_MKDOCS_2_WARNING, value: "1" }
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          volumeMounts:
+            - { name: git, mountPath: /git, readOnly: true }
+            - { name: site, mountPath: /site }
+            - { name: scripts, mountPath: /scripts }
+        - name: nginx
+          image: nginx:1.30-alpine
+          ports:
+            - containerPort: 80
+          readinessProbe:           # 404 until the first build lands
+            httpGet: { path: /, port: 80 }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits: { memory: 64Mi }
+          volumeMounts:
+            - { name: site, mountPath: /site, readOnly: true }
+            - { name: nginx-conf, mountPath: /etc/nginx/conf.d }
+      volumes:
+        - { name: git, emptyDir: {} }
+        - { name: site, emptyDir: {} }
+        - name: scripts
+          configMap: { name: docs-build }
+        - name: nginx-conf
+          configMap: { name: docs-nginx }
