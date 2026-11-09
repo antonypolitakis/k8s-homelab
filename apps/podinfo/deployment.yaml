@@ -20,6 +20,17 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 8Mi
+              memory: 32Mi
             limits:
-              memory: 8Mi
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 9898
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9898
+            initialDelaySeconds: 5
