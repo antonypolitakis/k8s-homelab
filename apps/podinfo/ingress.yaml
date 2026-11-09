@@ -2,8 +2,14 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: podinfo
+  annotations:
+    cert-manager.io/cluster-issuer: homelab-ca
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - podinfo.localhost
+      secretName: podinfo-tls
   rules:
     - host: podinfo.localhost
       http:
