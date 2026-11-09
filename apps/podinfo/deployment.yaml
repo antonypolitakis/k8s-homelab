@@ -20,9 +20,9 @@ spec:
           resources:
             requests:
               cpu: 50m
-              memory: 32Mi
+              memory: 4Mi
             limits:
-              memory: 128Mi
+              memory: 8Mi
           readinessProbe:
             httpGet:
               path: /readyz
