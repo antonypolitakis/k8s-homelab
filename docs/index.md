@@ -1,5 +1,6 @@
 # k8s-homelab
 
+Yo yo yo! :)
 A local Kubernetes learning lab on an Apple Silicon Mac, run the **GitOps** way: the Git repo is the source of truth, and Argo CD keeps the cluster in sync with it.
 
 ```
