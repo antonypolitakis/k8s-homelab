@@ -4,7 +4,7 @@
 # /site/<hash>  = a built site;  /site/live -> the one nginx serves
 last=""
 while true; do
-  src=$(readlink -f /git/current 2>/dev/null || true)
+  src=$(readlink -f /git/root/current 2>/dev/null || true)
   rev=${src##*/}
   if [ -n "$rev" ] && [ -f "$src/mkdocs.yml" ] && [ "$rev" != "$last" ]; then
     last=$rev
