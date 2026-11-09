@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.14.0          # must match bootstrap.sh
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/argocd/values.yaml
+    - repoURL: https://github.com/antonypolitakis/k8s-homelab.git
+      targetRevision: main
+      ref: values                      # makes this repo available as $values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
