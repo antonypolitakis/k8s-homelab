@@ -1,0 +1,86 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 93.2.0
+    helm:
+      valuesObject:
+        # kind binds these to 127.0.0.1 inside the node, so they can't be scraped
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeEtcd:
+          enabled: false
+        kubeProxy:
+          enabled: false
+        # webhook certs from cert-manager, instead of Helm hook Jobs
+        prometheusOperator:
+          admissionWebhooks:
+            certManager:
+              enabled: true
+        # avoids a mount-propagation error in Docker-based nodes
+        prometheus-node-exporter:
+          hostRootFsMount:
+            enabled: false
+        prometheus:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: homelab-ca
+            hosts:
+              - prometheus.localhost
+            tls:
+              - secretName: prometheus-tls
+                hosts:
+                  - prometheus.localhost
+          prometheusSpec:
+            retention: 3d
+            # watch every ServiceMonitor/PodMonitor/rule, not just this chart's
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            probeSelectorNilUsesHelmValues: false
+        alertmanager:
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: homelab-ca
+            hosts:
+              - alertmanager.localhost
+            tls:
+              - secretName: alertmanager-tls
+                hosts:
+                  - alertmanager.localhost
+        grafana:
+          testFramework:
+            enabled: false
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            annotations:
+              cert-manager.io/cluster-issuer: homelab-ca
+            hosts:
+              - grafana.localhost
+            tls:
+              - secretName: grafana-tls
+                hosts:
+                  - grafana.localhost
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
