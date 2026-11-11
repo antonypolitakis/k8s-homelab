@@ -17,7 +17,14 @@ else
   echo "WARNING: no CA in $CA_DIR - HTTPS certificates won't be issued (see docs/https.md)"
 fi
 
-# 3. Argo CD, with our settings (ingress at argocd.localhost, plain HTTP behind Traefik)
+# 3. Grafana admin password: random per rebuild, kept out of Git.
+#    (If the chart generated it, Argo CD would re-randomise it on every render.)
+kubectl create namespace monitoring
+kubectl create secret generic grafana-admin -n monitoring \
+  --from-literal=admin-user=admin \
+  --from-literal=admin-password="$(openssl rand -base64 18)"
+
+# 4. Argo CD, with our settings (ingress at argocd.localhost, plain HTTP behind Traefik)
 helm repo add argo https://argoproj.github.io/argo-helm >/dev/null 2>&1 || true
 helm repo update argo
 helm upgrade --install argocd argo/argo-cd \
@@ -26,11 +33,11 @@ helm upgrade --install argocd argo/argo-cd \
   -f argocd/values.yaml
 kubectl wait --for=condition=available deploy --all -n argocd --timeout=300s
 
-# 4. Hand over to Git: root deploys everything in argocd/apps/ (Argo CD itself, Traefik,
+# 5. Hand over to Git: root deploys everything in argocd/apps/ (Argo CD itself, Traefik,
 #    cert-manager, podinfo, Minecraft...). Helm isn't used again after this.
 kubectl apply -f argocd/root.yaml
 
-# 5. Wait for the ingress controller, so the URLs below work when we finish
+# 6. Wait for the ingress controller, so the URLs below work when we finish
 echo "Waiting for Traefik..."
 until kubectl get application traefik -n argocd >/dev/null 2>&1; do sleep 2; done
 kubectl wait application/traefik -n argocd \
@@ -43,5 +50,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 echo
 echo "Argo CD:   https://argocd.localhost   (user: admin)"
 echo "podinfo:   https://podinfo.localhost"
+echo "Docs:      https://docs.localhost"
+echo "Grafana:   https://grafana.localhost   (user: admin, password: $(kubectl get secret grafana-admin -n monitoring -o jsonpath='{.data.admin-password}' | base64 -d))"
+echo "Prometheus: https://prometheus.localhost"
 echo "(certificates take ~1 min after this to be issued)"
 echo "Minecraft: localhost:25565"

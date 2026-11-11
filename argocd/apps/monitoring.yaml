@@ -61,6 +61,10 @@ spec:
                 hosts:
                   - alertmanager.localhost
         grafana:
+          # Use a Secret made by bootstrap.sh. If the chart generates the password,
+          # Argo CD gets a new random one on every render and overwrites the Secret.
+          admin:
+            existingSecret: grafana-admin
           testFramework:
             enabled: false
           ingress:
