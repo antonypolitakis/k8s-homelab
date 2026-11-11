@@ -17,4 +17,9 @@ spec:
       prune: true
       selfHeal: true
     syncOptions:
-      - CreateNamespace=true   # Argo CD creates the namespace, so there's no namespace.yaml
+      - CreateNamespace=true
+      - SkipDryRunOnMissingResource=true   # ServiceMonitor CRD may not exist yet
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
