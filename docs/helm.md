@@ -140,6 +140,69 @@ Argo CD only borrows Helm's *templating*. Features that depend on Helm being the
 !!! tip "Rule of thumb"
     If a chart value is generated, looked up or random, set it yourself when using Argo CD.
 
+## Helm vs brew
+
+A chart is a lot like a Homebrew formula — but with differences that matter:
+
+| Like brew | Unlike brew |
+|---|---|
+| Formula ↔ **chart**; tap ↔ **chart repo** | Installs a *description* (YAML), not files: Kubernetes pulls the container images and runs them |
+| `brew install/upgrade/uninstall/list` ↔ `helm install/upgrade/uninstall/list` | **Values** customise each install heavily — same chart, different setup per cluster |
+| Someone else maintains the recipe | One chart can be installed **many times** (separate releases) |
+| | No prerequisite resolution — e.g. cert-manager had to be installed before monitoring could use it |
+
+Here Helm is closer to a **Brewfile**: the list of what you want, and its settings, lives in Git — and Argo CD keeps the cluster matching it continuously.
+
+## How charts are secured
+
+Mostly by **trust in whoever wrote them**. A chart is code that creates whatever it likes, with the permissions of whatever applies it — like running someone's install script.
+
+### What a chart can do here
+
+The installer is Argo CD's application controller, and its ClusterRole allows everything:
+
+```
+argocd-application-controller:  apiGroups: *  resources: *  verbs: *
+```
+
+All apps use Argo CD's `default` AppProject, which restricts nothing:
+
+```yaml
+sourceRepos: ["*"]                                # any chart repo or Git repo
+destinations: [{namespace: "*", server: "*"}]     # anywhere
+clusterResourceWhitelist: [{group: "*", kind: "*"}]   # any cluster-wide resource
+```
+
+So charts can — and these legitimately do:
+
+- create **ClusterRoles** (the monitoring chart makes three so Prometheus can read pods and nodes cluster-wide),
+- install **admission webhooks** that see every resource you create (Prometheus operator, cert-manager),
+- run **host-level pods** (node-exporter uses `hostNetwork` and `hostPID` to read node stats).
+
+A malicious or compromised chart could use the same power for anything.
+
+### From the internet to the cluster
+
+| Layer | Protection | Status here |
+|---|---|---|
+| **Download** | HTTPS from the project's own repo | ✅ All five charts come from official project repos |
+| **Integrity** | The repo's `index.yaml` lists a SHA-256 digest per version; Helm checks the download against it | ✅ Automatic — catches corruption, but not a compromised repo (it would publish a new digest) |
+| **Authenticity** | Optional signatures: PGP `.prov` files (classic repos) or **cosign/Sigstore** (OCI charts) | ❌ Not checked — Traefik publishes no `.prov`; neither Helm nor Argo CD verifies by default |
+| **Pinning** | `targetRevision: 42.3.1`, never "latest" | ✅ Every chart pinned. Versions *should* be immutable, but an owner could re-publish one |
+| **Container images** | Separate supply chain — the chart only names an image | ⚠️ Pinned by tag, not digest; not scanned |
+| **Secrets** | Kept out of values and Git | ✅ CA key and Grafana password made outside Git, used via `existingSecret`. (Values in Git are plain text; a Helm release Secret stores its values too.) |
+
+### Tightening it, in order of usefulness
+
+1. **Read before installing.** `helm template … | grep '^kind:' | sort | uniq -c` — look for ClusterRoles, webhooks, `privileged`, `hostNetwork`, `hostPID`.
+2. **A dedicated Argo CD AppProject** with an allowlist of source repos (this repo + the five chart repos) and destinations. A typo'd or malicious URL is then refused.
+3. **Pod Security Admission** (built into Kubernetes): label app namespaces like `podinfo` as `restricted` so nothing there can run privileged or as root; exempt the ones that need host access (monitoring).
+4. **Scan images** — e.g. Trivy, which can run in-cluster and report known vulnerabilities in everything running.
+5. **Verify signatures** with cosign for OCI charts and images — mostly a production concern.
+
+!!! note "Risk in this lab"
+    Official sources and pinned versions keep the realistic risk low. But "Argo CD installs anything, anywhere, from any repo" is the default — and the first thing production teams change.
+
 ## Helm vs Kustomize
 
 Both appear in this repo, for different jobs:

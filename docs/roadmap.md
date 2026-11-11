@@ -33,6 +33,7 @@ Done: ~~Argo CD manages itself~~ ([GitOps](gitops.md#argo-cd-manages-itself)) ·
 - Delete the `argocd-initial-admin-secret` after first login, as Argo CD recommends.
 - Redirect HTTP → HTTPS in Traefik (`ports.web.redirections`).
 - Scrape Argo CD and cert-manager (their charts have `serviceMonitor.enabled` switches) and import community dashboards.
+- **Security hardening:** a `homelab` AppProject with a repo/destination allowlist (then test it by pointing an app at a disallowed repo); Pod Security Admission labels on app namespaces; Trivy image scanning; image digests instead of tags. See [Helm → How charts are secured](helm.md#how-charts-are-secured).
 - Alertmanager notifications (e.g. to a Slack or email receiver).
 - Re-enable etcd / scheduler / controller-manager metrics with kind `kubeadmConfigPatches` (bind to `0.0.0.0`).
 - Secrets in Git, safely: SOPS or Sealed Secrets (would replace the hand-loaded CA Secret).
