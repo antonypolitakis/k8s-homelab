@@ -126,3 +126,39 @@ Added `argocd/apps/argocd.yaml` (Argo CD's own chart + `argocd/values.yaml` from
 Made a name-constrained CA on the Mac with `openssl`, trusted it in the System keychain, loaded it as a Secret, and added cert-manager + a `ClusterIssuer` through Argo CD. Annotated the two Ingresses.
 **Result:** both certificates issued within seconds of the sync; `https://argocd.localhost` shows a padlock. Argo CD's TLS was switched on by committing to its own `values.yaml` — self-management in action.
 **Lesson:** the private key is the one thing that can't go in Git; everything else (issuer, which hosts get certs) can. See [HTTPS](https.md).
+
+## Docs as an in-cluster app
+
+A pod with git-sync, mkdocs and nginx serving this wiki at `https://docs.localhost`.
+**Result:** first try crash-looped — git's "dubious ownership" check (root-owned volume, non-root git-sync). Fixed by giving git-sync a subfolder it owns. After that, a docs-only push went live in about a minute with no new pod and no Argo CD sync; a broken link was rejected and the old site kept serving.
+**Lessons:** sidecars share work through volumes; a readiness probe that checks for *content* (not just a listening port) keeps an empty site out of rotation. See [Docs site](apps/docs.md).
+
+## Project 4 — Monitoring
+
+### Watch the HPA in Grafana
+
+kube-prometheus-stack via Argo CD; three Explore queries (current replicas, desired replicas, CPU ÷ request) during `hey -z 5m -c 50`.
+**Result:** desired jumped to 8 while current was at 4 — the decision ahead of the pods. CPU plateaued at ~5.5× the request with 8 pods (capped at `maxReplicas`). After the load, CPU took about a minute to read 0 (the `rate(...[1m])` window), then replicas stayed at 8 for nearly 5 minutes.
+**Lesson:** graphs with history show *sequences* — cause, reaction, delay — that a live `kubectl -w` hides.
+
+### Shorten the scale-down window (300s → 60s)
+
+One change in Git: `behavior.scaleDown.stabilizationWindowSeconds: 60`. Same test again, measured in Prometheus:
+
+| Window | CPU back under target | desired → 2 |
+|---|---|---|
+| 300s | 14:08:06 | 14:12:51 (4m 45s) |
+| 60s | 14:24:06 | 14:24:51 (45s) |
+
+**Lesson:** change one thing, observe again. The API server filled in the rest of `behavior` with defaults, which Argo CD knows to ignore.
+
+### App metrics and a dashboard in Git
+
+A hand-written ServiceMonitor for podinfo, Traefik's chart-provided one, and a dashboard JSON in a labelled ConfigMap.
+**Result:** both podinfo pods appeared as separate targets within ~30s; the dashboard loaded within seconds of the sync, no restart.
+
+### Grafana's password changed by itself
+
+**Result:** about an hour in, the password in the Secret stopped working. Argo CD's events showed an automated sync that changed only `Secret monitoring-grafana`: the chart generates a random password on every render, and Argo CD can't look up the existing one.
+**Fix:** `grafana.admin.existingSecret`, created by `bootstrap.sh`.
+**Lesson:** random values in charts drift under GitOps. Read the events before guessing.

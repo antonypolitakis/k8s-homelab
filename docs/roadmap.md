@@ -7,17 +7,17 @@
 - [x] **3. Hostnames and HTTPS**
     - [x] Traefik ingress with `*.localhost`
     - [x] cert-manager with a local certificate authority, trusted by the Mac
-- [ ] **4. Monitoring** — `kube-prometheus-stack` (Prometheus + Grafana), app metrics, a custom dashboard; watch the HPA from project 2
+- [x] **4. Monitoring** — `kube-prometheus-stack` (Prometheus + Grafana), app metrics, a custom dashboard; watch the HPA from project 2
 - [x] **5. GitOps with Argo CD** — app of apps, auto-sync, prune, self-heal, Argo CD manages itself
 - [ ] **6. Write a Kubernetes extension** — a custom resource and controller with kubebuilder
 - [ ] **7. Graduate to the cloud** — Terraform a small managed cluster (e.g. EKS), deploy the same manifests, destroy it afterwards
 
 ## Next up
 
-1. **Local LLMs** — see below.
-2. **Monitoring** — project 4.
+1. **Local LLMs** — llama.cpp on the Mac (GPU), called from the cluster, its `/metrics` scraped into Grafana.
+2. **A full rebuild** to prove everything comes back from Git.
 
-Done: ~~Argo CD manages itself~~ ([GitOps](gitops.md#argo-cd-manages-itself)) · ~~cert-manager~~ ([HTTPS](https.md)).
+Done: ~~Argo CD manages itself~~ ([GitOps](gitops.md#argo-cd-manages-itself)) · ~~cert-manager~~ ([HTTPS](https.md)) · ~~monitoring~~ ([Monitoring](monitoring.md)).
 
 ## Later
 
@@ -32,4 +32,7 @@ Done: ~~Argo CD manages itself~~ ([GitOps](gitops.md#argo-cd-manages-itself)) ·
 - Gateway API instead of the Ingress API.
 - Delete the `argocd-initial-admin-secret` after first login, as Argo CD recommends.
 - Redirect HTTP → HTTPS in Traefik (`ports.web.redirections`).
+- Scrape Argo CD and cert-manager (their charts have `serviceMonitor.enabled` switches) and import community dashboards.
+- Alertmanager notifications (e.g. to a Slack or email receiver).
+- Re-enable etcd / scheduler / controller-manager metrics with kind `kubeadmConfigPatches` (bind to `0.0.0.0`).
 - Secrets in Git, safely: SOPS or Sealed Secrets (would replace the hand-loaded CA Secret).

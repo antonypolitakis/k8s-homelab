@@ -122,6 +122,27 @@ The first version had **no** `automated` policy, so nothing would sync without a
     A bad commit to `argocd/values.yaml` can take down the thing that would apply the fix. If the UI goes away: fix Git, then rescue with the bootstrap command —
     `helm upgrade --install argocd argo/argo-cd -n argocd --version 10.14.0 -f argocd/values.yaml` — or rebuild.
 
+## Charts that generate random values
+
+Some charts make up a value at render time — a password, a token, a certificate. With plain Helm that's fine: the chart looks up the existing Secret and reuses it. Argo CD renders without cluster access, so **every render produces a new random value**, Argo CD sees drift, and `selfHeal` overwrites the live Secret.
+
+That's what happened to Grafana's admin password. The fix is to set the value yourself, or point the chart at a Secret made outside Git (`grafana.admin.existingSecret`). See [Monitoring](monitoring.md#the-random-password-trap).
+
+## Apps that depend on another app's CRDs
+
+`cluster-issuers` (ClusterIssuer) and `podinfo` (ServiceMonitor) use resource kinds that another app installs. On a fresh cluster they may sync first, so they carry:
+
+```yaml
+syncOptions:
+  - SkipDryRunOnMissingResource=true
+retry:
+  limit: 10
+  backoff:
+    duration: 10s
+```
+
+A failed first sync on those apps is normal; the retry fixes it.
+
 ## Status meanings
 
 | Sync | Health | Meaning |

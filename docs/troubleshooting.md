@@ -79,6 +79,37 @@
 **`CrashLoopBackOff`**
 : The container keeps exiting. `kubectl logs <pod> --previous` shows the last crash.
 
+## Monitoring
+
+**Grafana rejects the password from the Secret**
+: Grafana only reads its admin password when its database is first created. If the Secret changed afterwards, they disagree. Delete the Grafana pod (`kubectl delete pod -n monitoring -l app.kubernetes.io/name=grafana`) — its `emptyDir` database is recreated with the current password.
+
+**An app flips to OutOfSync on its own and "fixes" a Secret**
+: The chart generates a random value on every render. Set it explicitly or use an existing Secret. See [GitOps](gitops.md#charts-that-generate-random-values).
+
+**New ServiceMonitor, but no target in Prometheus**
+: Check that the ServiceMonitor's `selector` matches the **Service's** labels (not the pod's), and that `port:` is the Service port's **name**. Then wait ~30s for the operator to reload Prometheus. **Status → Targets** shows it, or `lastError` if scraping fails.
+
+**Custom dashboard doesn't appear in Grafana**
+: The ConfigMap needs the label `grafana_dashboard: "1"`. `kubectl logs -n monitoring deploy/monitoring-grafana -c grafana-sc-dashboard` shows whether the sidecar picked it up.
+
+**A dashboard edited in Grafana disappeared**
+: Grafana's storage is an `emptyDir`. Export the JSON into `apps/dashboards/` instead.
+
+**Grafana is slower to react than `kubectl get hpa -w`**
+: Expected: 15–30s scrape interval plus a 1-minute `rate()` window. See [Monitoring](monitoring.md#two-pipelines).
+
+## Docs app
+
+**git-sync crash-loops: `detected dubious ownership in repository at '/git'`**
+: The `emptyDir` is owned by root; git-sync runs as UID 65533 and git refuses a repo owned by someone else. Point `--root` at a subfolder (`/git/root`) so git-sync creates — and owns — it.
+
+**docs.localhost didn't update after a push**
+: `kubectl logs -n docs deploy/docs -c mkdocs`. `FAILED` means the strict build rejected the commit (broken link, bad nav entry) — the previous version is still served. Reproduce locally with `mkdocs build --strict`.
+
+**A broken page was published anyway**
+: Don't add `-q` to `mkdocs build`: quiet mode hides warnings, and `--strict` only fails on warnings it sees.
+
 ## Tools
 
 **`kubectl` version skew**

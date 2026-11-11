@@ -40,10 +40,11 @@ What `bootstrap.sh` does, in order:
 
 1. **`kind create cluster --config cluster/kind-config.yaml`** — 3 nodes, with Mac ports 80/443/25565 mapped in. See [The cluster](cluster.md).
 2. **Loads the local CA** from `~/.homelab-ca/` into a Secret in `cert-manager` (warns and carries on if it's missing).
-3. **`helm upgrade --install argocd argo/argo-cd --version 10.14.0 -f argocd/values.yaml`** — installs Argo CD with our settings (ingress at `argocd.localhost`, plain HTTP behind Traefik). Then waits for all its Deployments.
-4. **`kubectl apply -f argocd/root.yaml`** — the *only* hand-applied manifest. From here, Argo CD deploys everything in `argocd/apps/` from GitHub — including **Argo CD itself**, which adopts the Helm install. See [GitOps](gitops.md#argo-cd-manages-itself).
-5. **Waits for Traefik** to be Healthy, so the URLs work when it finishes.
-6. Prints the Argo CD admin password and the URLs.
+3. **Creates the Grafana admin Secret** (`grafana-admin`) with a random password. See [Monitoring](monitoring.md#the-random-password-trap) for why the chart doesn't generate it.
+4. **`helm upgrade --install argocd argo/argo-cd --version 10.14.0 -f argocd/values.yaml`** — installs Argo CD with our settings (ingress at `argocd.localhost`, plain HTTP behind Traefik). Then waits for all its Deployments.
+5. **`kubectl apply -f argocd/root.yaml`** — the *only* hand-applied manifest. From here, Argo CD deploys everything in `argocd/apps/` from GitHub — including **Argo CD itself**, which adopts the Helm install. See [GitOps](gitops.md#argo-cd-manages-itself).
+6. **Waits for Traefik** to be Healthy, so the URLs work when it finishes.
+7. Prints the Argo CD and Grafana passwords and the URLs. Monitoring takes another 2–3 minutes to come up.
 
 The script `cd`s to its own directory first, so it can be run from anywhere.
 
@@ -59,7 +60,8 @@ The script `cd`s to its own directory first, so it can be run from anywhere.
 |---|---|
 | Everything defined in Git — apps, ingress, autoscaling, config | Data in PersistentVolumes (the Minecraft world) |
 | The local CA and the Mac's trust in it (`~/.homelab-ca/`) | Issued certificates (re-issued automatically in ~1 min) |
-| | The Argo CD admin password (a new one is generated) |
+| | The Argo CD and Grafana admin passwords (new ones are generated) |
+| | Metrics history, and anything saved only in Grafana's UI |
 | | Running port-forwards |
 
 ## Logging in to Argo CD
@@ -68,4 +70,12 @@ Open <https://argocd.localhost>, user `admin`, password:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d; echo
+```
+
+## Logging in to Grafana
+
+Open <https://grafana.localhost>, user `admin`, password:
+
+```bash
+kubectl get secret grafana-admin -n monitoring -o jsonpath="{.data.admin-password}" | base64 -d; echo
 ```

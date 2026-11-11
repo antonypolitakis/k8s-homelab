@@ -15,6 +15,10 @@ A local Kubernetes learning lab on an Apple Silicon Mac, run the **GitOps** way:
 |---|---|
 | <https://argocd.localhost> | Argo CD UI (user `admin`) |
 | <https://podinfo.localhost> | podinfo — a small demo web app, autoscaled |
+| <https://docs.localhost> | This wiki, built from GitHub inside the cluster |
+| <https://grafana.localhost> | Grafana dashboards (user `admin`) |
+| <https://prometheus.localhost> | Prometheus — raw metrics and queries |
+| <https://alertmanager.localhost> | Alertmanager — firing alerts |
 | `localhost:25565` | Minecraft server (Java Edition) |
 
 ## The big ideas
@@ -28,5 +32,5 @@ A local Kubernetes learning lab on an Apple Silicon Mac, run the **GitOps** way:
 ## Where to go next
 
 - New here? Start with [Setup & bootstrap](setup.md), then [The cluster](cluster.md).
-- Want to understand the plumbing? Read [GitOps with Argo CD](gitops.md), [Ingress](ingress.md), [HTTPS](https.md) and [Storage](storage.md).
+- Want to understand the plumbing? Read [GitOps with Argo CD](gitops.md), [Ingress](ingress.md), [HTTPS](https.md), [Storage](storage.md) and [Monitoring](monitoring.md).
 - Want to see what's been tried and what it taught? See the [Experiments](experiments.md) log.
