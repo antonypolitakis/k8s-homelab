@@ -44,6 +44,7 @@ nav:
       - The cluster: cluster.md
   - How it works:
       - GitOps with Argo CD: gitops.md
+      - Helm: helm.md
       - Ingress (Traefik): ingress.md
       - HTTPS (cert-manager): https.md
       - Storage: storage.md

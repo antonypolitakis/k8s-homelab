@@ -32,5 +32,5 @@ A local Kubernetes learning lab on an Apple Silicon Mac, run the **GitOps** way:
 ## Where to go next
 
 - New here? Start with [Setup & bootstrap](setup.md), then [The cluster](cluster.md).
-- Want to understand the plumbing? Read [GitOps with Argo CD](gitops.md), [Ingress](ingress.md), [HTTPS](https.md), [Storage](storage.md) and [Monitoring](monitoring.md).
+- Want to understand the plumbing? Read [GitOps with Argo CD](gitops.md), [Helm](helm.md), [Ingress](ingress.md), [HTTPS](https.md), [Storage](storage.md) and [Monitoring](monitoring.md).
 - Want to see what's been tried and what it taught? See the [Experiments](experiments.md) log.

@@ -7,7 +7,7 @@
 | [OrbStack](https://orbstack.dev) | Docker 29.8 | Runs a lightweight Linux VM with Docker in it. kind's "nodes" are containers inside it. Lighter and faster than Docker Desktop on Apple Silicon. |
 | [kind](https://kind.sigs.k8s.io) | v0.33.0 | **K**ubernetes **in** **D**ocker — builds a real, upstream Kubernetes cluster where each node is a Docker container. |
 | kubectl | current | The Kubernetes CLI. Must be within one minor version of the cluster. |
-| helm | current | Installs Argo CD once, at bootstrap (after that, Argo CD manages itself). |
+| helm | current | Installs Argo CD once, at bootstrap (after that, Argo CD manages itself). Also handy for reading charts: `helm show values`, `helm template`. See [Helm](helm.md). |
 | k9s | current | Terminal UI — press `0` for all namespaces, `:q` to quit. |
 | gh | current | GitHub CLI — create repos, manage auth. |
 | hey | 0.1.5 | HTTP load generator for testing autoscaling. |

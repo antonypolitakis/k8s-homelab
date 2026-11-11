@@ -117,7 +117,7 @@ Every Application syncs automatically with `prune: true` (removed from Git → d
 
 **To add an app:** manifests in `apps/<name>/` + an Application in `argocd/apps/<name>.yaml` + an `ingress.yaml` with `host: <name>.localhost` (plus the cert-manager annotation and `tls:` block for HTTPS) if it's a web app → `git push`.
 
-Details: [GitOps](docs/gitops.md) · [Ingress](docs/ingress.md) · [HTTPS](docs/https.md) · [Storage](docs/storage.md) · [Autoscaling](docs/autoscaling.md) · [Monitoring](docs/monitoring.md)
+Details: [GitOps](docs/gitops.md) · [Helm](docs/helm.md) · [Ingress](docs/ingress.md) · [HTTPS](docs/https.md) · [Storage](docs/storage.md) · [Autoscaling](docs/autoscaling.md) · [Monitoring](docs/monitoring.md)
 
 ## Accessing things
 

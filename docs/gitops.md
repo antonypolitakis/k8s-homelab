@@ -46,7 +46,7 @@ root (argocd/root.yaml)               ← applied once, by bootstrap.sh
 An Application's source can be:
 
 - **A folder in this repo** containing plain manifests and a `kustomization.yaml` (podinfo, minecraft).
-- **A Helm chart from a chart repository**, with values written inline under `helm.valuesObject` (traefik, metrics-server).
+- **A Helm chart from a chart repository**, with values written inline under `helm.valuesObject` (traefik, metrics-server). Argo CD renders the chart itself — see [Helm](helm.md).
 - **Several sources at once** — a chart from one place, its values file from this repo (argocd; see below).
 
 ## Sync policy
